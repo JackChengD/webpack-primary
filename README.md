@@ -50,10 +50,8 @@ webpack4+会把webpack安装在以下目录
 ```js
     // src/index.js
     import { helloworld } from "./helloworld";
-
     document.write(helloworld());
-
-    }
+    
 
     // src/helloworld.js
     export function helloworld() {
