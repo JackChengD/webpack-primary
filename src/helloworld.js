@@ -1,3 +1,3 @@
-export function helloworld() {
-    return 'helloworld'
+export const helloworld =  () => {
+    return 'helloworld';
 }
