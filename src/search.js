@@ -7,7 +7,7 @@ import loaderPng from "./assets/images/common-loader.png"
 
 class Search extends React.Component {
     render() {
-        return <div class="red">
+        return <div className="red">
             Search Text12
             <img src={loaderPng} />
         </div>
