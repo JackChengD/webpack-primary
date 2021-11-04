@@ -236,7 +236,7 @@ mode用来指定当前构建的环境：production、development还是none。根
 安装对应插件，因为需要演示react所以也安装 react react-dom
 
 ```shell
-    npm install @babel/preset-react -D
+    npm install react react-dom @babel/preset-react -D
 ```
 
 添加babel配置文件.babelrc
@@ -460,4 +460,236 @@ module.exports = {
         ]
     }
 }
+```
+
+### 文件监听
+
+文件监听是在源码发生变化时，自动重新构建出新得输出文件。  
+
+webpack启动监听模式，有两种方法(都需要手动刷新浏览器)：  
+
+> 启动webpack命令时，带上--watch参数  
+> 在配置webpack.config.js中设置watch:true
+
+```json
+{
+    "scripts": {
+        "build": "webpack --watch",
+    },
+}
+```
+
+```js
+module.exports = {
+    watch: true
+}
+```
+
+原理分析:  
+
+webpack会轮询的判断文件的最后编译时间是否变化  
+某个文件发生了变化，并不会立刻告诉监听者，而是先缓存起来，等aggregateTimeout
+
+```js
+module.exports = {
+    watch: true, // 默认是false不开启
+    watchOptions: { // 只有开启监听模式，watchOptions才有意义
+        ignored: /node_modules/, // 不监听的文件
+        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
+        poll: 1000 // 轮询时间，默认每秒问1000次
+    }
+}
+```
+
+### 热更新
+
+热更新采用webpack-dev-server  
+不刷新浏览器，而是放在内存中（watch时放在磁盘中），所以其构建速度有优势  
+与HotModuleReplacementPlugin插件一起使用  
+
+安装对应插件
+
+```shell
+    npm install webpack-dev-server -D
+```
+
+package.json添加dev启动命令
+
+```json
+{
+    "scripts": {
+        "dev": "webpack-dev-server",
+    },
+}
+```
+
+webpack.config.js添加对应命令
+
+```js
+'use strict'
+const webpack = require('webpack');
+module.exports = {
+    mode: 'development',
+    watchOptions: { // 只有开启监听模式，watchOptions才有意义
+        ignored: /node_modules/, // 不监听的文件
+        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
+        poll: 1000 // 轮询时间，默认每秒问1000次
+    },
+    plugins: [
+        new webpack.HotModuleReplacementPlugin()
+    ],
+    devServer: {
+        static: './dist',
+        open: true
+    }
+}
+```
+
+原理分析：  
+
+> Webpack Compile：将js编译成bundle  
+> HMR Server：将热更新的文件输出给HMR Rumtime  
+> Bundle Server: 提供文件在浏览器的访问  
+> HMR Rumtime：会被注入到浏览器，更新文件的变化  
+> bundle.js：构建输出的文件  
+
+![原理图](./assets/images/hmr.png)
+
+### 文件指纹
+
+打包后输出的文件名的后缀，用于防缓存  
+
+#### 如何生成文件指纹
+
+Hash：和整个项目相关，只有项目文件有修改，整个项目构建的hash值都会更改。  
+Chunkhash：和webpack打包的chunk有关，不同的entry会生成不同的chunkhash值。  
+Contenthash：根据文件变化来定义hash，文件内容不变，则contenthash不变。  
+
+JS文件指纹位置
+
+```js
+module.exports = {
+    output: {
+        filename: '[name].[chunkhash:8].js'
+    },
+}
+```
+
+css文件指纹位置  
+
+设置MiniCssExtractPlugin的filename
+
+安装对应插件
+
+```shell
+npm install mini-css-extract-plugin -D
+```
+
+```js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+module.exports = {
+    plugins: [
+        new MiniCssExtractPlugin({
+            filename: '[name].[contenthash:8].css'
+        })
+    ],
+}
+```
+
+图片的文件指纹位置
+
+```js
+module.exports = {
+    module: {
+        rules: [
+            {
+                test: /\.(png|svg|jpg|gif)$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        limit: 10240,
+                        name: 'images/[name].[hash:8].[ext]'
+                    }
+                }]
+            },
+        }
+    }
+}
+```
+
+### 代码压缩
+
+js文件压缩使用的uglifyjs-webpack-plugin
+
+安装相应插件
+
+```shell
+npm install uglifyjs-webpack-plugin -D
+```
+
+```js
+const UglifyjsWebpackPlugin = require('uglifyjs-webpack-plugin')
+module.exports = {
+    plugins: [
+        new UglifyjsWebpackPlugin()
+    ],
+}
+```
+
+css文件压缩使用的optimize-css-assets-webpack-plugin  
+同时使用cssnano
+
+安装相应插件
+
+```shell
+npm install optimize-css-assets-webpack-plugin -D
+```
+
+```js
+const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
+module.exports = {
+    plugins: [
+        new OptimizeCssAssetsWebpackPlugin({
+            assertNameRegExp: /\.css$/g,
+            csssProcessor: require('cssnano')
+        })
+    ],
+}
+```
+
+html文件压缩  
+
+修改html-webpack-plugin，设置压缩参数  
+
+安装对应插件  
+
+```shell
+npm install html-webpack-plugin -D
+```
+
+webpack.config.js配置
+
+```js
+'use strict'
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+
+module.exports = {
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: path.join(__dirname, 'src/search.html'),
+            filename: 'search.html',
+            chunks: ['search'],
+            inject: true,
+            minify: {
+                html5: true,
+                collapseWhitespace: true,
+                preserveLineBreaks: false,
+                minifyCSS: true,
+                minifyJS: true,
+                removeComments: false,
+            }
+        })
+    ],
+}
+
 ```
