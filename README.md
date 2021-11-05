@@ -577,7 +577,7 @@ module.exports = {
 
 css文件指纹位置  
 
-设置MiniCssExtractPlugin的filename
+设置MiniCssExtractPlugin的filename，MiniCssExtractPlugin.loader不能和style-loader一起使用，一个是提取css，一个是导入css
 
 安装对应插件
 
@@ -588,6 +588,18 @@ npm install mini-css-extract-plugin -D
 ```js
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 module.exports = {
+        module: {
+        rules: [
+            {
+                test: /\.css$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
+            },
+            {
+                test: /\.less$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']
+            },
+        ]
+    },
     plugins: [
         new MiniCssExtractPlugin({
             filename: '[name].[contenthash:8].css'
@@ -617,9 +629,134 @@ module.exports = {
 }
 ```
 
+将webpack.config.js拆分为webpack.dev.js、webpack.prod.js
+
+```js
+// webpack.dev.js
+'use strict'
+
+const path = require('path');
+const webpack = require('webpack');
+
+module.exports = {
+    entry: {
+        index: './src/index.js',
+        search: './src/search.js',
+    },
+    output: {
+        path: path.join(__dirname, 'dist'),
+        filename: '[name].js'
+    },
+    mode: 'development',
+    watchOptions: { // 只有开启监听模式，watchOptions才有意义
+        ignored: /node_modules/, // 不监听的文件
+        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
+        poll: 1000 // 轮询时间，默认每秒问1000次
+    },
+    module: {
+        rules: [
+            {
+                test: /.js$/,
+                use: 'babel-loader'
+            },
+            {
+                test: /\.css$/,
+                use: ['style-loader', 'css-loader']
+            },
+            {
+                test: /\.less$/,
+                use: ['style-loader', 'css-loader', 'less-loader']
+            },
+            {
+                test: /\.(png|svg|jpg|gif)$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        limit: 10240,
+                        name: 'images/[name].[ext]'
+                    }
+                }]
+            },
+            {
+                test: /.(woff|woff2|eot|ttf|otf)$/,
+                use: 'file-loader'
+            }
+        ]
+    },
+    plugins: [
+        new webpack.HotModuleReplacementPlugin(),
+    ],
+    devServer: {
+        static: path.join(__dirname, './dist'),
+        open: true
+    }
+}
+```
+
+```js
+// webpack.prod.js
+'use strict'
+
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+
+module.exports = {
+    entry: {
+        index: './src/index.js',
+        search: './src/search.js',
+    },
+    output: {
+        path: path.join(__dirname, 'dist'),
+        filename: '[name].[chunkhash:8].js'
+    },
+    mode: 'production',
+    watchOptions: { // 只有开启监听模式，watchOptions才有意义
+        ignored: /node_modules/, // 不监听的文件
+        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
+        poll: 1000 // 轮询时间，默认每秒问1000次
+    },
+    module: {
+        rules: [
+            {
+                test: /.js$/,
+                use: 'babel-loader'
+            },
+            {
+                test: /\.css$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader']
+            },
+            {
+                test: /\.less$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']
+            },
+            {
+                test: /\.(png|svg|jpg|gif)$/,
+                use: [{
+                    loader: 'file-loader',
+                    options: {
+                        limit: 10240,
+                        name: 'images/[name].[hash:8].[ext]'
+                    }
+                }]
+            },
+            {
+                test: /.(woff|woff2|eot|ttf|otf)$/,
+                use: 'file-loader'
+            }
+        ]
+    },
+    plugins: [
+        new MiniCssExtractPlugin({
+            filename: '[name].[contenthash:8].css'
+        }),
+    ],
+}
+
+```
+
 ### 代码压缩
 
-js文件压缩使用的uglifyjs-webpack-plugin
+js文件压缩使用的uglifyjs-webpack-plugin,webpack4+是已经内置了的，如果你有其他配置的话可以引入
 
 安装相应插件
 
@@ -692,4 +829,27 @@ module.exports = {
     ],
 }
 
+```
+
+## 进阶用法
+
+### 自动清理构建目标产物
+
+使用clean-webpack-plugin默认会删除output指定的输出目录
+
+安装对应插件
+
+```shell
+npm install clean-webpacl-plugin -D
+```
+
+webpack.prod.js添加对应配置
+
+```js
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+module.exports = {
+    plugins: [
+        new CleanWebpackPlugin()
+    ]
+}
 ```

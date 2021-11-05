@@ -2,10 +2,8 @@
 
 const path = require('path');
 const webpack = require('webpack');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin')
-const UglifyjsWebpackPlugin = require('uglifyjs-webpack-plugin')
-const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 module.exports = {
     entry: {
@@ -14,7 +12,7 @@ module.exports = {
     },
     output: {
         path: path.join(__dirname, 'dist'),
-        filename: '[name].[chunkhash:8].js'
+        filename: '[name].js'
     },
     mode: 'development',
     watchOptions: { // 只有开启监听模式，watchOptions才有意义
@@ -42,7 +40,7 @@ module.exports = {
                     loader: 'file-loader',
                     options: {
                         limit: 10240,
-                        name: 'images/[name].[hash:8].[ext]'
+                        name: 'images/[name].[ext]'
                     }
                 }]
             },
@@ -54,14 +52,6 @@ module.exports = {
     },
     plugins: [
         new webpack.HotModuleReplacementPlugin(),
-        new MiniCssExtractPlugin({
-            filename: '[name].[contenthash:8].css'
-        }),
-        new UglifyjsWebpackPlugin(),
-        new OptimizeCssAssetsWebpackPlugin({
-            assertNameRegExp: /\.css$/g,
-            csssProcessor: require('cssnano')
-        }),
         new HtmlWebpackPlugin({
             template: path.join(__dirname, 'src/search.html'),
             filename: 'search.html',
@@ -75,7 +65,22 @@ module.exports = {
                 minifyJS: true,
                 removeComments: false,
             }
-        })
+        }),
+        new HtmlWebpackPlugin({
+            template: path.join(__dirname, 'src/index.html'),
+            filename: 'index.html',
+            chunks: ['index'],
+            inject: true,
+            minify: {
+                html5: true,
+                collapseWhitespace: true,
+                preserveLineBreaks: false,
+                minifyCSS: true,
+                minifyJS: true,
+                removeComments: false,
+            }
+        }),
+        new CleanWebpackPlugin()
     ],
     devServer: {
         static: path.join(__dirname, './dist'),
