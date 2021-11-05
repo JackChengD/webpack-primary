@@ -1,9 +1,7 @@
 'use strict'
 
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 module.exports = {
     entry: {
@@ -51,7 +49,6 @@ module.exports = {
         ]
     },
     plugins: [
-        new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
             template: path.join(__dirname, 'src/search.html'),
             filename: 'search.html',
@@ -80,7 +77,6 @@ module.exports = {
                 removeComments: false,
             }
         }),
-        new CleanWebpackPlugin()
     ],
     devServer: {
         static: path.join(__dirname, './dist'),
