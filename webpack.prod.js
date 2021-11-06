@@ -4,7 +4,9 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const OptimizeCssAssetsWebpackPlugin = require('optimize-css-assets-webpack-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const {
+    CleanWebpackPlugin
+} = require('clean-webpack-plugin')
 
 module.exports = {
     entry: {
@@ -16,14 +18,8 @@ module.exports = {
         filename: '[name].[chunkhash:8].js'
     },
     mode: 'production',
-    watchOptions: { // 只有开启监听模式，watchOptions才有意义
-        ignored: /node_modules/, // 不监听的文件
-        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
-        poll: 1000 // 轮询时间，默认每秒问1000次
-    },
     module: {
-        rules: [
-            {
+        rules: [{
                 test: /.js$/,
                 use: 'babel-loader'
             },
@@ -33,7 +29,28 @@ module.exports = {
             },
             {
                 test: /\.less$/,
-                use: [MiniCssExtractPlugin.loader, 'css-loader', 'less-loader']
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'less-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            postcssOptions: {
+                                plugins: [
+                                    require('autoprefixer') //postcss-loader会叫autoprefixer插件添加浏览器前缀
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        loader: 'px2rem-loader',
+                        options: {
+                            remUnit: 37.5,  // 1rem=37.5px
+                            remPrecision: 8 // 小数点8位
+                        }
+                    }
+                ]
             },
             {
                 test: /\.(png|svg|jpg|gif)$/,

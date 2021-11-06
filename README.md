@@ -710,11 +710,6 @@ module.exports = {
         filename: '[name].[chunkhash:8].js'
     },
     mode: 'production',
-    watchOptions: { // 只有开启监听模式，watchOptions才有意义
-        ignored: /node_modules/, // 不监听的文件
-        aggregateTimeout: 1000, // 发生变化后等待时间后再编译，默认300ms
-        poll: 1000 // 轮询时间，默认每秒问1000次
-    },
     module: {
         rules: [
             {
@@ -852,4 +847,112 @@ module.exports = {
         new CleanWebpackPlugin()
     ]
 }
+```
+
+### 自动补全css前缀
+
+使用postcss插件autoprefixer自动补齐css3前缀  
+
+安装相关插件、loader
+
+```shell
+npm install autoprefixer postcss postcss-loader -D
+```
+
+webpack相关配置
+
+```js
+'use strict'
+
+module.exports = {
+    module: {
+        rules: [
+            {
+                test: /\.less$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'less-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            postcssOptions: {
+                                plugins: [
+                                    require('autoprefixer') //postcss-loader会叫autoprefixer插件添加浏览器前缀
+                                ]
+                            }
+                        }
+                    }
+                ]
+            },
+        ]
+    },
+}
+```
+
+### css自动转为rem
+
+使用px2rem-loader进行转换，后续需要知道1rem是多少px，可以借助页面渲染时计算根元素的font-size的值，可以使用手淘的lib-flexible库  
+
+安装对应loader
+
+```shell
+npm install px2rem-loader -D
+npm install lib-flexible -S
+```
+
+对应webpack配置
+
+```js
+module.exports = {
+    module: {
+        rules: [
+            {
+                test: /\.less$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader',
+                    'less-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            postcssOptions: {
+                                plugins: [
+                                    require('autoprefixer') //postcss-loader会叫autoprefixer插件添加浏览器前缀
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        loader: 'px2rem-loader',
+                        options: {
+                            remUnit: 37.5,  // 1rem=37.5px
+                            remPrecision: 8 // 小数点8位
+                        }
+                    }
+                ]
+            },
+        ]
+    },
+}
+```
+
+### 静态资源内敛
+
+代码层面：
+
+> 页面框架的初始化脚本
+> 上报相关打点
+> css内联避免页面闪动
+
+请求层面：减少http请求
+
+> 小图片或者字体内敛（url-loader）
+
+使用raw-loader内敛html、js  
+
+使用style-loader / html-inline-css-webpack-plugin（常用）内敛css
+
+```shell
+npm install row-loader@0.5.1 -D
 ```
