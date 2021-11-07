@@ -2,13 +2,14 @@
 
 import React from "react"
 import ReactDOM from "react-dom"
-import './assets/css/search.less'
-import loaderPng from "./assets/images/common-loader.png"
+import './index.less'
+import loaderPng from "../assets/images/common-loader.png"
+import '../../common';
 
 class Search extends React.Component {
     render() {
         return <div className="red">
-            Search Text12323222
+            Search Text12
             <img src={loaderPng} />
         </div>
     }

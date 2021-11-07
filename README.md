@@ -956,3 +956,172 @@ module.exports = {
 ```shell
 npm install row-loader@0.5.1 -D
 ```
+
+### 多页面打包
+
+每一次页面跳转的时候，后台服务器都会返回一个新的html文档。  
+这种类型的网站就是多页网站，也叫多页应用。  
+
+#### 基本思路
+
+每个页面对应一个entry，一个html-webpack-plugin  
+
+做一些约定，比如把入口都放在'./scr/*/index.js'里面，利用glob.sync去访问  
+
+修改webpack配置
+
+```js
+const glob = require('glob');
+const setMPA = () => {
+    const entry = {};
+    const htmlWebpackPlugin = [];
+
+    const entryFiles = glob.sync(path.join(__dirname, './src/*/index.js'));
+
+    Object.keys(entryFiles).map(index => {
+        const entryFile = entryFiles[index];
+
+        const match = entryFile.match(/src\/(.*)\/index\.js/);
+        const pageName = match && match[1]
+        console.log(pageName, entryFile)
+        entry[pageName] = entryFile;
+
+        htmlWebpackPlugin.push(new HtmlWebpackPlugin({
+            template: path.join(__dirname, `src/${pageName}/index.html`),
+            filename: `${pageName}.html`,
+            chunks: [pageName],
+            inject: true,
+            minify: {
+                html5: true,
+                collapseWhitespace: true,
+                preserveLineBreaks: false,
+                minifyCSS: true,
+                minifyJS: true,
+                removeComments: false,
+            }
+        }))
+    })
+
+    return {
+        entry,
+        htmlWebpackPlugin
+    }
+}
+
+const {
+    entry,
+    htmlWebpackPlugin
+} = setMPA();
+module.exports = {
+    entry,
+    plugins: [].concat(htmlWebpackPlugin),
+}
+```
+
+### source map
+
+作用：通过source map定位到源代码  
+
+开发环境开启，线上环境关闭
+
+> 线上排查问题的时候可以将sourceMap上传到错误监控系统
+
+source map关键字：
+> eval：使用eval包裹模块代码  
+> source map：生成.map文件  
+> cheap：不包含列信息  
+> inline：将.map和DataURI嵌入，不单独生成.map文件  
+> module：包含loader的sourcemap  
+
+source map类型  
+![source map类型](./assets/images/sourcemap-type.png)
+
+### 提取页面公共资源
+
+利用HtmlWebpackExternalsPlugin / SplitChunksPlugin进行公共脚本分离（基本库、页面公共文件）  
+
+安装对应插件
+
+```shell
+npm install html-webpack-externals-plugin -D
+```
+
+webpack配置
+
+```js
+const HtmlWebpackExternalsPlugin = require('html-webpack-externals-plugin')
+
+module.exports = {
+    plugins: [
+        new HtmlWebpackExternalsPlugin({
+            externals: [{
+                module: 'react',
+                entry: 'https://11.url.cn/now/lib/16.2.0/react.min.js',
+                global: 'React',
+            }, {
+                module: 'react-dom',
+                entry: 'https://11.url.cn/now/lib/16.2.0/react-dom.min.js',
+                global: 'ReactDOM',
+            }],
+        })
+    ],
+}
+
+```
+
+使用SplitChunksPlugin(内置)
+
+webpack添加配置
+
+```js
+
+const setMPA = () => {
+    const entry = {};
+    const htmlWebpackPlugin = [];
+
+    const entryFiles = glob.sync(path.join(__dirname, './src/*/index.js'));
+
+    Object.keys(entryFiles).map(index => {
+        const entryFile = entryFiles[index];
+
+        const match = entryFile.match(/src\/(.*)\/index\.js/);
+        const pageName = match && match[1]
+        console.log(pageName, entryFile)
+        entry[pageName] = entryFile;
+
+        htmlWebpackPlugin.push(new HtmlWebpackPlugin({
+            template: path.join(__dirname, `src/${pageName}/index.html`),
+            filename: `${pageName}.html`,
+            chunks: ['vendors', pageName],
+            inject: true,
+            minify: {
+                html5: true,
+                collapseWhitespace: true,
+                preserveLineBreaks: false,
+                minifyCSS: true,
+                minifyJS: true,
+                removeComments: false,
+            }
+        }))
+    })
+
+    return {
+        entry,
+        htmlWebpackPlugin
+    }
+}
+
+module.exports = {
+    optimization: {
+        splitChunks: {
+            cacheGroups: {
+                commons: {
+                    test: /(react | react-dom)/,
+                    name: 'vendors',
+                    chunks: 'all'
+                }
+            }
+        }
+    },
+}
+```
