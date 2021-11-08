@@ -1125,3 +1125,105 @@ module.exports = {
     },
 }
 ```
+
+### tree shaking（摇树优化）
+
+概念：一个模块可能有多个方法，只要其中的某个方法使用到了，则整个文件都会被打到bundle里面去，tree shaking就是只把用到的方法打入bundle，没用到的方法会在uglify阶段被擦除掉。  
+
+使用：webpack4+默认支持，在.babelrc里设置modules:false即可  
+.production mode的情况下默认开启  
+
+要求：必须是es6的语法，cjs的方式不支持。  
+
+在编译阶段就要确定什么代码是不需要被用到的，然后将其去掉，而不是编译之后再确定
+
+### Scope Hoisting使用和原理分析
+
+将所有模块的代码按照引用顺序放在一个函数zuo'yong域里，然后适合的重命名一些变量以防止变量名冲突  
+
+对比：通过scope hoisting可以减少函数生命代码和内存开销  
+
+### 代码分割和动态import
+
+代码分割的意义：  
+对于大的web应用来讲，将所有的代码都放在一个文件显然是不够有效的，特别是当你的某些代码块在某些特殊的时候才会被使用到。webpack有一个功能就是将你的代码库分割成chunks（语块），当代码运行到需要它们的时候再进行加载。  
+使用场景：
+> 使用相同代码到一个共享块  
+> 脚本懒加载，使得初始下载的代码更小  
+
+懒加载JS脚本的方式：
+CommonJS：require.ensure  
+ES6：动态import
+
+#### 如何使用动态import
+
+安装babel插件
+
+```shell
+npm install @babel/plugin-syntax-dynamic-import -D
+```
+
+.babelrc添加
+
+```json
+{
+    "plugins": ["@babel/plugin-syntax-dynamic-import"]
+}
+```
+
+例子
+
+```js
+// search/index.js
+'use strict'
+
+import React from "react"
+import ReactDOM from "react-dom"
+import './index.less'
+import loaderPng from "../assets/images/common-loader.png"
+import '../../common';
+
+
+class Search extends React.Component {
+    constructor() {
+        super(...arguments);
+        this.state = {
+            Text: null
+        }
+    }
+    loadComponent() {
+        import('./text.js').then((Text) => {
+            this.setState({
+                Text: Text.default
+            })
+        })
+    }
+    render() {
+        const { Text } = this.state;
+        return <div className="red">
+            Search Text12
+            {
+                Text ? <Text/> : null
+            }
+            <img src={loaderPng} onClick={this.loadComponent.bind(this)} />
+        </div>
+    }
+}
+
+ReactDOM.render(
+    <Search/>,
+    document.getElementById('root')
+)
+
+```
+
+```js
+// search/text.js
+import React from "react"
+
+export default () => <div>动态import</div>
+
+```
+
+
+
