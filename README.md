@@ -1225,5 +1225,50 @@ export default () => <div>动态import</div>
 
 ```
 
+### webpack中使用eslint
+
+webpack与eslint集成，使用eslint-loader  
+
+安装对应插件
+
+```shell
+npm install eslint eslint-loader babel-eslint -D
+```
+
+使用airbnb的eslint
+
+```shell
+npm install eslint-config-airbnb eslint-plugin-import eslint-plugin-jsx-a11y eslint-plugin-react -D
+```
+
+webpack添加配置
+
+```js
+module.exports = {
+    module: {
+        rules: [{
+                test: /.js$/,
+                use: ['babel-loader', 'eslint-loader']
+            },
+        ]
+    },
+}
+```
+
+添加.eslintrc.js配置
+
+```js
+module.exports = {
+    "parser": "babel-eslint",
+    "extends": "airbnb",
+    "env": {
+        "browser": true,
+        "node": true
+    },
+    "rules": {
+        "indent": ["error", 4]
+    }
+};
+```
 
 
