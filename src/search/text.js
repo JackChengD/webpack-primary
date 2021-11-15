@@ -1,3 +1,7 @@
-import React from "react"
+import React from 'react';
 
-export default () => <div>动态import</div>
+const Text = () => {
+  return <div>动态import</div>
+}
+
+export default Text;
